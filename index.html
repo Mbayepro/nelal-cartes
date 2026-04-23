@@ -481,6 +481,160 @@
     color: #00F0FF;
   }
 
+  /* Bouton copier lien */
+  .copy-btn {
+    background: rgba(0,240,255,0.1);
+    border: 1px solid rgba(0,240,255,0.3);
+    color: #00F0FF;
+    padding: .4rem .9rem;
+    border-radius: 100px;
+    font-size: .72rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    transition: all .2s;
+    margin-top: .5rem;
+  }
+  .copy-btn:hover {
+    background: rgba(0,240,255,0.2);
+    border-color: #00F0FF;
+    transform: translateY(-1px);
+  }
+  .copy-btn.copied {
+    background: #22C55E;
+    border-color: #22C55E;
+    color: #fff;
+  }
+
+  /* Preview Mobile */
+  .mobile-preview-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding: 1.5rem;
+    background: rgba(16,16,42,0.5);
+    border-radius: 16px;
+    border: 1px solid rgba(0,240,255,0.1);
+  }
+  .mobile-preview-label {
+    font-size: .75rem;
+    color: #64748B;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .mobile-frame {
+    width: 280px;
+    height: 560px;
+    background: #000;
+    border-radius: 30px;
+    padding: 12px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    position: relative;
+  }
+  .mobile-frame::before {
+    content: '';
+    position: absolute;
+    top: 15px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 20px;
+    background: #1a1a1a;
+    border-radius: 10px;
+  }
+  .mobile-screen {
+    width: 100%;
+    height: 100%;
+    background: #0A0A1E;
+    border-radius: 20px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  .mobile-header {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 50px;
+    background: linear-gradient(to right, #075E54, #128C7E);
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    gap: .5rem;
+  }
+  .mobile-header span {
+    color: white;
+    font-size: .85rem;
+    font-weight: 600;
+  }
+  .mobile-qr-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 40px;
+  }
+  .mobile-qr-small {
+    width: 160px;
+    height: 160px;
+    background: white;
+    border-radius: 12px;
+    padding: 8px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+  .mobile-qr-small canvas,
+  .mobile-qr-small img {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 4px;
+  }
+  .mobile-text {
+    text-align: center;
+    color: #94A3B8;
+    font-size: .75rem;
+    line-height: 1.5;
+  }
+  .mobile-text strong {
+    color: #00F0FF;
+    display: block;
+    margin-bottom: .3rem;
+    font-size: .85rem;
+  }
+  .mobile-instruction {
+    position: absolute;
+    bottom: 20px;
+    left: 20px;
+    right: 20px;
+    background: rgba(34,197,94,0.1);
+    border: 1px solid rgba(34,197,94,0.3);
+    border-radius: 12px;
+    padding: .8rem;
+    text-align: center;
+  }
+  .mobile-instruction p {
+    color: #22C55E;
+    font-size: .7rem;
+    margin: 0;
+  }
+  .mobile-instruction .arrow {
+    font-size: 1.5rem;
+    animation: bounce 1s infinite;
+    display: block;
+    margin-bottom: .3rem;
+  }
+  @keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
   /* Templates de messages rapides */
   .message-templates {
     display: flex;
@@ -800,6 +954,33 @@
         <span class="wa-dot"></span>
         WhatsApp direct
       </div>
+
+      <button class="copy-btn" id="copy-link-btn" onclick="copyWhatsAppLink()" title="Copier le lien pour partager">
+        📋 Copier le lien
+      </button>
+    </div>
+  </div>
+
+  <!-- PREVIEW MOBILE -->
+  <div class="mobile-preview-section">
+    <div class="mobile-preview-label">📱 Aperçu sur téléphone</div>
+    <div class="mobile-frame">
+      <div class="mobile-screen">
+        <div class="mobile-header">
+          <span>📱 WhatsApp</span>
+        </div>
+        <div class="mobile-qr-area">
+          <div class="mobile-qr-small" id="mobile-qr-display"></div>
+          <div class="mobile-text">
+            <strong id="mobile-livreur-name">Nelal Express</strong>
+            <span id="mobile-phone">77 XXX XX XX</span>
+          </div>
+        </div>
+        <div class="mobile-instruction">
+          <span class="arrow">👆</span>
+          <p>Scannez ce code pour<br/>envoyer un message</p>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -829,32 +1010,53 @@ function buildWaUrl(phone, message) {
 function generateQR(url, containerId = 'qrcode-display', size = 180) {
   const container = document.getElementById(containerId);
   if (!container) return null;
+  
+  // Nettoyer complètement le conteneur
   container.innerHTML = '';
+  
+  // Supprimer toutes les références de la bibliothèque QRCode précédente
+  if (container.qrcode) {
+    container.qrcode.clear();
+    container.qrcode = null;
+  }
 
   // Créer le conteneur avec position relative
   const qrWrapper = document.createElement('div');
   qrWrapper.className = 'qr-container';
+  qrWrapper.id = containerId + '-wrapper';
   container.appendChild(qrWrapper);
 
-  // Générer le QR
-  const qr = new QRCode(qrWrapper, {
-    text: url,
-    width: size,
-    height: size,
-    colorDark: '#0A0A1E',
-    colorLight: '#ffffff',
-    correctLevel: QRCode.CorrectLevel.H,
-  });
+  // Forcer un reflow du DOM
+  void qrWrapper.offsetWidth;
 
-  // Ajouter le logo WhatsApp (seulement pour le QR principal)
-  if (containerId === 'qrcode-display' && size > 100) {
-    const logo = document.createElement('div');
-    logo.className = 'qr-logo';
-    logo.innerHTML = `<svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.35-8.413"/></svg>`;
-    qrWrapper.appendChild(logo);
-  }
+  // Générer le QR avec un délai minimal pour s'assurer que le DOM est prêt
+  setTimeout(() => {
+    const qr = new QRCode(qrWrapper, {
+      text: url,
+      width: size,
+      height: size,
+      colorDark: '#0A0A1E',
+      colorLight: '#ffffff',
+      correctLevel: QRCode.CorrectLevel.H,
+    });
 
-  return qr;
+    // Stocker la référence
+    container.qrcode = qr;
+
+    // Ajouter le logo WhatsApp (seulement pour le QR principal)
+    if (containerId === 'qrcode-display' && size > 100) {
+      // Vérifier si le logo existe déjà
+      const existingLogo = qrWrapper.querySelector('.qr-logo');
+      if (!existingLogo) {
+        const logo = document.createElement('div');
+        logo.className = 'qr-logo';
+        logo.innerHTML = `<svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.35-8.413"/></svg>`;
+        qrWrapper.appendChild(logo);
+      }
+    }
+
+    return qr;
+  }, 0); // Ajout de l'accolade fermante manquante
 }
 
 function updateCard() {
@@ -875,18 +1077,72 @@ function updateCard() {
   const livreurDisplay = nom ? `Livreur: ${nom} · Sénégal 🇸🇳` : 'Service de livraison · Sénégal 🇸🇳';
   document.getElementById('c-livreur').textContent = livreurDisplay;
 
-  // Regénérer le QR
+  // Regénérer le QR principal
   const url = buildWaUrl(phone, message);
   generateQR(url);
+
+  // Mettre à jour la preview mobile
+  updateMobilePreview(nom, phone, message);
+
+  // Stocker l'URL pour le bouton copier
+  window.currentWaUrl = url;
 }
 
-// ── Thèmes ────────────────────────────────────────────
 function changeTheme(theme) {
   const card = document.getElementById('card');
   card.classList.remove('theme-light', 'theme-orange');
   if (theme) {
     card.classList.add(theme);
   }
+}
+
+// ── Copier le lien WhatsApp ────────────────────────────────────────────
+function copyWhatsAppLink() {
+  const url = window.currentWaUrl;
+  if (!url) {
+    alert('Générez d\'abord un QR code');
+    return;
+  }
+
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.getElementById('copy-link-btn');
+    const originalText = btn.textContent;
+    btn.classList.add('copied');
+    btn.textContent = '✓ Copié !';
+    
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.textContent = originalText;
+    }, 2000);
+  }).catch(err => {
+    // Fallback pour anciens navigateurs
+    const textArea = document.createElement('textarea');
+    textArea.value = url;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+    
+    const btn = document.getElementById('copy-link-btn');
+    btn.classList.add('copied');
+    btn.textContent = '✓ Copié !';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.textContent = '📋 Copier le lien';
+    }, 2000);
+  });
+}
+
+// ── Mise à jour de la preview mobile ────────────────────────────────────────────
+function updateMobilePreview(nom, phone, message) {
+  // Mettre à jour les infos texte
+  const displayName = nom || 'Nelal Express';
+  document.getElementById('mobile-livreur-name').textContent = displayName;
+  document.getElementById('mobile-phone').textContent = phone || '77 XXX XX XX';
+
+  // Générer le QR mobile (plus petit)
+  const url = buildWaUrl(phone, message);
+  generateQR(url, 'mobile-qr-display', 140);
 }
 
 // ── Export PNG ────────────────────────────────────────────
@@ -1192,9 +1448,12 @@ window.addEventListener('load', () => {
   updateLivreurSelector();
   renderMiniatures();
   const phone = document.getElementById('f-phone').value.trim();
+  const nom = document.getElementById('f-nom').value.trim();
   const message = document.getElementById('f-message').value.trim();
   const url = buildWaUrl(phone, message);
   generateQR(url);
+  updateMobilePreview(nom, phone, message);
+  window.currentWaUrl = url;
 });
 </script>
 </body>
