@@ -407,6 +407,125 @@
     50% { opacity: 0.4; }
   }
 
+  /* QR Container avec position relative pour le logo */
+  .qr-container {
+    position: relative;
+    display: inline-block;
+  }
+
+  /* Logo WhatsApp au centre du QR */
+  .qr-logo {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 42px;
+    height: 42px;
+    background: #25D366;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    z-index: 10;
+  }
+  .qr-logo svg {
+    width: 24px;
+    height: 24px;
+    fill: white;
+  }
+
+  /* Animation laser scan */
+  .qr-frame {
+    position: relative;
+    overflow: hidden;
+  }
+  .qr-frame.scanning::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, #00F0FF, #F97316, transparent);
+    box-shadow: 0 0 10px #00F0FF, 0 0 20px #F97316;
+    animation: scanLaser 1.5s ease-in-out infinite;
+  }
+  @keyframes scanLaser {
+    0%, 100% { top: 0; opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { top: 100%; opacity: 0; }
+  }
+
+  /* Effet pulsation sur le cadre QR au survol */
+  .qr-frame:hover {
+    box-shadow: 0 0 40px rgba(0,240,255,0.2), 0 0 80px rgba(249,115,22,0.1);
+    transform: scale(1.02);
+    transition: all 0.3s ease;
+  }
+
+  /* Lien cliquable sous le QR */
+  .qr-link {
+    font-size: .65rem;
+    color: #64748B;
+    text-decoration: none;
+    word-break: break-all;
+    text-align: center;
+    max-width: 180px;
+    display: block;
+    margin-top: .5rem;
+    transition: color .2s;
+  }
+  .qr-link:hover {
+    color: #00F0FF;
+  }
+
+  /* Templates de messages rapides */
+  .message-templates {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    margin-top: .5rem;
+    padding-top: .5rem;
+    border-top: 1px solid rgba(0,240,255,0.1);
+  }
+  .template-btn {
+    background: rgba(0,240,255,0.08);
+    border: 1px solid rgba(0,240,255,0.2);
+    color: #00F0FF;
+    padding: .35rem .7rem;
+    border-radius: 100px;
+    font-size: .7rem;
+    cursor: pointer;
+    transition: all .2s;
+    white-space: nowrap;
+  }
+  .template-btn:hover {
+    background: rgba(0,240,255,0.15);
+    border-color: #00F0FF;
+    transform: translateY(-1px);
+  }
+  .template-btn.active {
+    background: #00F0FF;
+    color: #050510;
+    font-weight: 600;
+  }
+
+  /* Stats QR */
+  .qr-stats {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-size: .65rem;
+    color: #64748B;
+    margin-top: .5rem;
+  }
+  .qr-stats span {
+    color: #F97316;
+    font-weight: 600;
+  }
+
   /* ── THÈMES ── */
   .theme-light .card {
     background: #ffffff;
@@ -573,6 +692,12 @@
 👤 Destinataire :
 📞 Tel :
 💳 Paiement : Wave / Orange / Cash</textarea>
+      <div class="message-templates">
+        <button class="template-btn" onclick="applyTemplate('commande')" title="Template commande complète">🚀 Commande</button>
+        <button class="template-btn" onclick="applyTemplate('devis')" title="Demande de devis">💰 Devis</button>
+        <button class="template-btn" onclick="applyTemplate('suivi')" title="Suivi de colis">📍 Suivi</button>
+        <button class="template-btn" onclick="applyTemplate('simple')" title="Message simple">💬 Simple</button>
+      </div>
     </div>
 
   </div>
@@ -661,7 +786,7 @@
     <div class="card-right">
       <div class="scan-label">📸 Scanner pour commander</div>
 
-      <div class="qr-frame">
+      <div class="qr-frame" id="qr-frame" onmouseenter="startScanAnimation()" onmouseleave="stopScanAnimation()">
         <div id="qrcode-display"></div>
       </div>
 
@@ -706,14 +831,30 @@ function generateQR(url, containerId = 'qrcode-display', size = 180) {
   if (!container) return null;
   container.innerHTML = '';
 
-  return new QRCode(container, {
+  // Créer le conteneur avec position relative
+  const qrWrapper = document.createElement('div');
+  qrWrapper.className = 'qr-container';
+  container.appendChild(qrWrapper);
+
+  // Générer le QR
+  const qr = new QRCode(qrWrapper, {
     text: url,
     width: size,
     height: size,
-    colorDark: '#0F172A',
+    colorDark: '#0A0A1E',
     colorLight: '#ffffff',
     correctLevel: QRCode.CorrectLevel.H,
   });
+
+  // Ajouter le logo WhatsApp (seulement pour le QR principal)
+  if (containerId === 'qrcode-display' && size > 100) {
+    const logo = document.createElement('div');
+    logo.className = 'qr-logo';
+    logo.innerHTML = `<svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.35-8.413"/></svg>`;
+    qrWrapper.appendChild(logo);
+  }
+
+  return qr;
 }
 
 function updateCard() {
