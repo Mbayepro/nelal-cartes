@@ -838,14 +838,14 @@
 
     <div class="field-group">
       <label>Message WhatsApp pré-rempli</label>
-      <textarea id="f-message">Salam ! Je veux commander via Nelal Express 🚀
+      <textarea id="f-message">Salam ! Commande via Nelal Express 🚀
 
-📦 Colis :
-📍 Départ :
-📍 Destination :
-👤 Destinataire :
-📞 Tel :
-💳 Paiement : Wave / Orange / Cash</textarea>
+Colis:
+Départ:
+Destination:
+Destinataire:
+Tel:
+Paiement:</textarea>
       <div class="message-templates">
         <button class="template-btn" onclick="applyTemplate('commande')" title="Template commande complète">🚀 Commande</button>
         <button class="template-btn" onclick="applyTemplate('devis')" title="Demande de devis">💰 Devis</button>
@@ -1035,9 +1035,9 @@ function generateQR(url, containerId = 'qrcode-display', size = 180) {
       text: url,
       width: size,
       height: size,
-      colorDark: '#0A0A1E',
+      colorDark: '#000000',
       colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.H,
+      correctLevel: QRCode.CorrectLevel.M,
     });
 
     // Stocker la référence
@@ -1077,9 +1077,9 @@ function updateCard() {
   const livreurDisplay = nom ? `Livreur: ${nom} · Sénégal 🇸🇳` : 'Service de livraison · Sénégal 🇸🇳';
   document.getElementById('c-livreur').textContent = livreurDisplay;
 
-  // Regénérer le QR principal
+  // Regénérer le QR principal (taille réduite pour scan rapide)
   const url = buildWaUrl(phone, message);
-  generateQR(url);
+  generateQR(url, 'qrcode-display', 160);
 
   // Mettre à jour la preview mobile
   updateMobilePreview(nom, phone, message);
@@ -1094,6 +1094,75 @@ function changeTheme(theme) {
   if (theme) {
     card.classList.add(theme);
   }
+}
+
+// ── Templates de messages ────────────────────────────────────────────
+function applyTemplate(type) {
+  const templates = {
+    commande: `Salam ! Commande via Nelal Express 🚀
+
+Colis:
+Départ:
+Destination:
+Destinataire:
+Tel:
+Paiement:`,
+    devis: `Bonjour, je voudrais un devis pour une livraison.
+
+Départ:
+Arrivée:
+Type de colis:
+Poids approximatif:
+
+Merci !`,
+    suivi: `Bonjour, je souhaite suivre mon colis.
+
+Référence:
+Date d'envoi:
+
+Merci`,
+    simple: `Salam, je contacte via Nelal Express 👋`
+  };
+  
+  const message = templates[type] || templates.simple;
+  document.getElementById('f-message').value = message;
+  
+  // Mettre à jour le bouton actif
+  document.querySelectorAll('.template-btn').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  
+  // Si c'est le template simple, mettre à jour immédiatement le QR pour un scan rapide
+  if (type === 'simple') {
+    const nom = document.getElementById('f-nom').value.trim();
+    const phone = document.getElementById('f-phone').value.trim();
+    const url = buildWaUrl(phone, message);
+    generateQR(url, 'qrcode-display', 160);
+    updateMobilePreview(nom, phone, message);
+    window.currentWaUrl = url;
+    
+    // Feedback visuel
+    const btn = event.target;
+    const originalText = btn.textContent;
+    btn.textContent = '✓ QR Minimal !';
+    btn.style.background = '#22C55E';
+    btn.style.color = '#fff';
+    setTimeout(() => {
+      btn.textContent = originalText;
+      btn.style.background = '';
+      btn.style.color = '';
+    }, 1500);
+  }
+}
+
+// ── Animation scan laser ────────────────────────────────────────────
+function startScanAnimation() {
+  const frame = document.getElementById('qr-frame');
+  if (frame) frame.classList.add('scanning');
+}
+
+function stopScanAnimation() {
+  const frame = document.getElementById('qr-frame');
+  if (frame) frame.classList.remove('scanning');
 }
 
 // ── Copier le lien WhatsApp ────────────────────────────────────────────
@@ -1150,18 +1219,30 @@ function exportCard() {
   const card = document.getElementById('card');
   const nom = document.getElementById('f-nom').value.trim() || 'carte';
 
-  html2canvas(card, {
-    scale: 2,
-    backgroundColor: null,
-    useCORS: true
-  }).then(canvas => {
-    const link = document.createElement('a');
-    link.download = `nelal-${nom.replace(/\s+/g, '-').toLowerCase()}.png`;
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  }).catch(err => {
-    alert('Erreur lors de l\'export : ' + err.message);
-  });
+  // Forcer la génération d'un QR frais avant export
+  const phone = document.getElementById('f-phone').value.trim();
+  const message = document.getElementById('f-message').value.trim();
+  const url = buildWaUrl(phone, message);
+  generateQR(url, 'qrcode-display', 160);
+
+  // Attendre que le QR soit généré puis exporter
+  setTimeout(() => {
+    html2canvas(card, {
+      scale: 3,
+      backgroundColor: '#ffffff',
+      useCORS: true,
+      allowTaint: true,
+      logging: false,
+      imageTimeout: 0
+    }).then(canvas => {
+      const link = document.createElement('a');
+      link.download = `nelal-${nom.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+    }).catch(err => {
+      alert('Erreur lors de l\'export : ' + err.message);
+    });
+  }, 200);
 }
 
 // ── Export PDF multi-cartes ────────────────────────────────────────────
@@ -1371,14 +1452,14 @@ function loadLivreur() {
     document.getElementById('f-slogan').value = 'Livraison rapide · Dakar, Banlieue & Intérieur';
     document.getElementById('f-zones').value = '🏙 Dakar · Pikine · Guédiawaye · Rufisque · Keur Massar';
     document.getElementById('f-zones2').value = '🚌 Saint-Louis · Ndioum · Touba · Thiès · Kaolack...';
-    document.getElementById('f-message').value = `Salam ! Je veux commander via Nelal Express 🚀
+    document.getElementById('f-message').value = `Salam ! Commande via Nelal Express 🚀
 
-📦 Colis :
-📍 Départ :
-📍 Destination :
-👤 Destinataire :
-📞 Tel :
-💳 Paiement : Wave / Orange / Cash`;
+Colis:
+Départ:
+Destination:
+Destinataire:
+Tel:
+Paiement:`;
     document.querySelectorAll('.mini-card').forEach(c => c.classList.remove('active'));
     updateCard();
     return;
@@ -1451,7 +1532,7 @@ window.addEventListener('load', () => {
   const nom = document.getElementById('f-nom').value.trim();
   const message = document.getElementById('f-message').value.trim();
   const url = buildWaUrl(phone, message);
-  generateQR(url);
+  generateQR(url, 'qrcode-display', 160);
   updateMobilePreview(nom, phone, message);
   window.currentWaUrl = url;
 });
